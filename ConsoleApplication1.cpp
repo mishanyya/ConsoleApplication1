@@ -6,7 +6,7 @@
 int main()
 {
 	int x;
-	std::cout << "insert value of x";
+	std::cout << "insert value of x:";
 	std::cin >> x;
 	x = 2 + 2 * x;
     std::cout <<"x="<< x;
