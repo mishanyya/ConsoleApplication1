@@ -15,6 +15,7 @@ int main()
 
 
 #define _WIN32_DCOM
+
 #include <iostream>
 using namespace std;
 #include <comdef.h>
@@ -22,9 +23,8 @@ using namespace std;
 
 #pragma comment(lib, "wbemuuid.lib")
 
-int main(int argc, char** argv)
+int main(int iArgCnt, char** argv)
 {
-	
 	HRESULT hres;
 
 	// Step 1: --------------------------------------------------
@@ -43,11 +43,11 @@ int main(int argc, char** argv)
 
 	hres = CoInitializeSecurity(
 		NULL,
-		-1,                          // COM authentication
+		-1,                          // COM negotiates service
 		NULL,                        // Authentication services
 		NULL,                        // Reserved
 		RPC_C_AUTHN_LEVEL_DEFAULT,   // Default authentication 
-		RPC_C_IMP_LEVEL_IMPERSONATE, // Default Impersonation  
+		RPC_C_IMP_LEVEL_IMPERSONATE, // Default Impersonation
 		NULL,                        // Authentication info
 		EOAC_NONE,                   // Additional capabilities 
 		NULL                         // Reserved
@@ -59,7 +59,7 @@ int main(int argc, char** argv)
 		cout << "Failed to initialize security. Error code = 0x"
 			<< hex << hres << endl;
 		CoUninitialize();
-		return 1;                    // Program has failed.
+		return 1;                      // Program has failed.
 	}
 
 	// Step 3: ---------------------------------------------------
@@ -75,30 +75,29 @@ int main(int argc, char** argv)
 
 	if (FAILED(hres))
 	{
-		cout << "Failed to create IWbemLocator object."
-			<< " Err code = 0x"
+		cout << "Failed to create IWbemLocator object. "
+			<< "Err code = 0x"
 			<< hex << hres << endl;
 		CoUninitialize();
 		return 1;                 // Program has failed.
 	}
 
-	// Step 4: -----------------------------------------------------
+	// Step 4: ---------------------------------------------------
 	// Connect to WMI through the IWbemLocator::ConnectServer method
 
 	IWbemServices* pSvc = NULL;
 
-	// Connect to the root\cimv2 namespace with
-	// the current user and obtain pointer pSvc
-	// to make IWbemServices calls.
+	// Connect to the local root\cimv2 namespace
+	// and obtain pointer pSvc to make IWbemServices calls.
 	hres = pLoc->ConnectServer(
-		_bstr_t(L"ROOT\\CIMV2"), // Object path of WMI namespace
-		NULL,                    // User name. NULL = current user
-		NULL,                    // User password. NULL = current
-		0,                       // Locale. NULL indicates current
-		NULL,                    // Security flags.
-		0,                       // Authority (for example, Kerberos)
-		0,                       // Context object 
-		&pSvc                    // pointer to IWbemServices proxy
+		_bstr_t(L"ROOT\\CIMV2"),
+		NULL,
+		NULL,
+		0,
+		NULL,
+		0,
+		0,
+		&pSvc
 	);
 
 	if (FAILED(hres))
@@ -114,12 +113,12 @@ int main(int argc, char** argv)
 
 
 	// Step 5: --------------------------------------------------
-	// Set security levels on the proxy -------------------------
+	// Set security levels for the proxy ------------------------
 
 	hres = CoSetProxyBlanket(
 		pSvc,                        // Indicates the proxy to set
-		RPC_C_AUTHN_WINNT,           // RPC_C_AUTHN_xxx
-		RPC_C_AUTHZ_NONE,            // RPC_C_AUTHZ_xxx
+		RPC_C_AUTHN_WINNT,           // RPC_C_AUTHN_xxx 
+		RPC_C_AUTHZ_NONE,            // RPC_C_AUTHZ_xxx 
 		NULL,                        // Server principal name 
 		RPC_C_AUTHN_LEVEL_CALL,      // RPC_C_AUTHN_LEVEL_xxx 
 		RPC_C_IMP_LEVEL_IMPERSONATE, // RPC_C_IMP_LEVEL_xxx
@@ -140,65 +139,74 @@ int main(int argc, char** argv)
 	// Step 6: --------------------------------------------------
 	// Use the IWbemServices pointer to make requests of WMI ----
 
-	// For example, get the name of the operating system
-	IEnumWbemClassObject* pEnumerator = NULL;
-	hres = pSvc->ExecQuery(
-		bstr_t("WQL"),
-		bstr_t("SELECT * FROM Win32_OperatingSystem"),
-		WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
-		NULL,
-		&pEnumerator);
+	// set up to call the Win32_Process::Create method
+	BSTR MethodName = SysAllocString(L"Create");
+	BSTR ClassName = SysAllocString(L"Win32_Process");
+
+	IWbemClassObject* pClass = NULL;
+	hres = pSvc->GetObject(ClassName, 0, NULL, &pClass, NULL);
+
+	IWbemClassObject* pInParamsDefinition = NULL;
+	hres = pClass->GetMethod(MethodName, 0,
+		&pInParamsDefinition, NULL);
+
+	IWbemClassObject* pClassInstance = NULL;
+	hres = pInParamsDefinition->SpawnInstance(0, &pClassInstance);
+
+	// Create the values for the in parameters
+	VARIANT varCommand;
+	varCommand.vt = VT_BSTR;
+	varCommand.bstrVal = _bstr_t(L"notepad.exe");
+
+	// Store the value for the in parameters
+	hres = pClassInstance->Put(L"CommandLine", 0,
+		&varCommand, 0);
+	wprintf(L"The command is: %s\n", V_BSTR(&varCommand));
+
+	// Execute Method
+	IWbemClassObject* pOutParams = NULL;
+	hres = pSvc->ExecMethod(ClassName, MethodName, 0,
+		NULL, pClassInstance, &pOutParams, NULL);
 
 	if (FAILED(hres))
 	{
-		cout << "Query for operating system name failed."
-			<< " Error code = 0x"
+		cout << "Could not execute method. Error code = 0x"
 			<< hex << hres << endl;
+		VariantClear(&varCommand);
+		SysFreeString(ClassName);
+		SysFreeString(MethodName);
+		pClass->Release();
+		pClassInstance->Release();
+		pInParamsDefinition->Release();
+		pOutParams->Release();
 		pSvc->Release();
 		pLoc->Release();
 		CoUninitialize();
 		return 1;               // Program has failed.
 	}
 
-	// Step 7: -------------------------------------------------
-	// Get the data from the query in step 6 -------------------
+	// To see what the method returned,
+	// use the following code.  The return value will
+	// be in &varReturnValue
+	VARIANT varReturnValue;
+	hres = pOutParams->Get(_bstr_t(L"ReturnValue"), 0,
+		&varReturnValue, NULL, 0);
 
-	IWbemClassObject* pclsObj = NULL;
-	ULONG uReturn = 0;
 
-	while (pEnumerator)
-	{
-		HRESULT hr = pEnumerator->Next(WBEM_INFINITE, 1,
-			&pclsObj, &uReturn);
-
-		if (0 == uReturn)
-		{
-			break;
-		}
-
-		VARIANT vtProp;
-
-		// Get the value of the Name property
-		hr = pclsObj->Get(L"Name", 0, &vtProp, 0, 0);
-		wcout << " OS Name : " << vtProp.bstrVal << endl;
-		VariantClear(&vtProp);
-
-		pclsObj->Release();
-	}
-
-	// Cleanup
-	// ========
-
-	pSvc->Release();
+	// Clean up
+	//--------------------------
+	VariantClear(&varCommand);
+	VariantClear(&varReturnValue);
+	SysFreeString(ClassName);
+	SysFreeString(MethodName);
+	pClass->Release();
+	pClassInstance->Release();
+	pInParamsDefinition->Release();
+	pOutParams->Release();
 	pLoc->Release();
-	pEnumerator->Release();
+	pSvc->Release();
 	CoUninitialize();
-
-	return 0;   // Program successfully completed.
-
-
-	
-
+	return 0;
 }
 
 
