@@ -1,20 +1,5 @@
 ﻿// ConsoleApplication1.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
 //
-/*
-#include <iostream>
-
-int main()
-{
-	int x,y;
-	std::cout << "insert value of x:";
-	std::cin >> x>>y;
-	x = x * x;
-    std::cout <<"x="<< x;
-	getchar();
-}*/
-
-
-
 
 #define _WIN32_DCOM
 #include <iostream>
@@ -179,9 +164,81 @@ int main(int argc, char** argv)
 
 		VARIANT vtProp;
 
-		// Get the value of the Name property
-		hr = pclsObj->Get(L"Name", 0, &vtProp, 0, 0);
-		wcout << " OS Name : " << vtProp.bstrVal << endl;
+		// Get the value of the property
+		
+		//изменение и тестирование выводимой информации
+		hr = pclsObj->Get(L"BootDevice", 0, &vtProp, 0, 0);
+		wcout << "Displayed : " << vtProp.bstrVal << endl;
+		/*выводит, если указать значение в L"...": 
+		BootDevice- \Device\HarddiskVolume2
+		BuildNumber- 17134
+		BuildType-  Multiprocessor Free
+		CodeSet-  1251
+		CountryCode- 7
+		CreationClassName- Win32_OperatingSystem
+		CSCreationClassName-  Win32_ComputerSystem
+		CSName- MISHANYA
+		FreePhysicalMemory-  774284
+		FreeSpaceInPagingFiles- 4113200
+		FreeVirtualMemory- 4414056
+		InstallDate- 20180624212158.000000+180
+		LastBootUpTime- 20190814104755.283745+180
+		LocalDateTime- 20190814170745.643000+180
+		Locale- 0419
+		Manufacturer- Microsoft Corporation
+		MaxProcessMemorySize-  137438953344
+		OSArchitecture-  64-
+		SerialNumber-  00327-60000-00000-AA321
+		SizeStoredInPagingFiles- 4193280
+		Status-  OK
+		SystemDevice-  \Device\HarddiskVolume4
+		SystemDirectory- C:\WINDOWS\system32
+		SystemDrive- C:
+		TotalVirtualMemorySize- 8266728
+		TotalVisibleMemorySize- 4073448
+		Version- 10.0.17134
+		WindowsDirectory- C:\WINDOWS
+
+		Caption- 
+		Description-
+		Name-
+
+		CSDVersion- выводит исключение!!!		
+		CurrentTimeZone- выводит исключение!!!
+		DataExecutionPrevention_Available- выводит исключение!!!
+		DataExecutionPrevention_32BitApplications- выводит исключение!!!
+		DataExecutionPrevention_Drivers- выводит исключение!!!
+		DataExecutionPrevention_SupportPolicy- выводит исключение!!!
+		Debug- выводит исключение!!!		 
+		Distributed- выводит исключение!!!
+		EncryptionLevel- выводит исключение!!!
+		ForegroundApplicationBoost- выводит исключение!!!		
+		LargeSystemCache- выводит исключение!!!		
+		MaxNumberOfProcesses- выводит исключение!!!		
+		MUILanguages[]- выводит исключение!!!		 
+		NumberOfLicensedUsers- выводит исключение!!!
+		NumberOfProcesses- выводит исключение!!!
+		NumberOfUsers- выводит исключение!!!
+		OperatingSystemSKU- выводит исключение!!!
+		Organization- выводит исключение!!!		
+		OSLanguage- выводит исключение!!!
+		OSProductSuite- выводит исключение!!!
+		OSType- выводит исключение!!!
+		OtherTypeDescription- выводит исключение!!!
+		PAEEnabled- выводит исключение!!!
+		PlusProductID- выводит исключение!!!
+		PlusVersionNumber- выводит исключение!!!
+		PortableOperatingSystem- выводит исключение!!!
+		Primary- выводит исключение!!!
+		ProductType- выводит исключение!!!
+		RegisteredUser- выводит исключение!!!		
+		ServicePackMajorVersion- выводит исключение!!!
+		ServicePackMinorVersion- выводит исключение!!!		
+		SuiteMask- выводит исключение!!!		
+		TotalSwapSpaceSize- выводит исключение!!!		
+		QuantumLength- выводит исключение!!!
+		QuantumType- выводит исключение!!!
+		*/
 		VariantClear(&vtProp);
 
 		pclsObj->Release();
@@ -199,18 +256,4 @@ int main(int argc, char** argv)
 
 }
 
-//должен показывать вариант ОС, но не показывает
-
-
-
-
-// Запуск программы: CTRL+F5 или меню "Отладка" > "Запуск без отладки"
-// Отладка программы: F5 или меню "Отладка" > "Запустить отладку"
-
-// Советы по началу работы 
-//   1. В окне обозревателя решений можно добавлять файлы и управлять ими.
-//   2. В окне Team Explorer можно подключиться к системе управления версиями.
-//   3. В окне "Выходные данные" можно просматривать выходные данные сборки и другие сообщения.
-//   4. В окне "Список ошибок" можно просматривать ошибки.
-//   5. Последовательно выберите пункты меню "Проект" > "Добавить новый элемент", чтобы создать файлы кода, или "Проект" > "Добавить существующий элемент", чтобы добавить в проект существующие файлы кода.
-//   6. Чтобы снова открыть этот проект позже, выберите пункты меню "Файл" > "Открыть" > "Проект" и выберите SLN-файл.
+//для тестирования получаемых данных системы
